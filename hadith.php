@@ -13,8 +13,8 @@ class GenerateSQLliteFile
 
     const DB_SERVER = "localhost";
     const DB_USER = "root";
-    const DB_PASSWORD = "123456";
-    const DB = "banglaHadith";
+    const DB_PASSWORD = "";
+    const DB = "hadithbd";
 
     private $db = NULL;
     private $SqlLiteDB=NULL;
@@ -75,7 +75,7 @@ $Generation->SQLLiteQuery('CREATE TABLE "hadithbook" ("id" INTEGER,"nameEnglish"
 
 $Generation->SQLLiteQuery('CREATE TABLE "hadithchapter" ("id" INTEGER, "nameEnglish" VARCHAR,"nameBengali" VARCHAR, "nameArabic" VARCHAR, "lastUpdate" VARCHAR,"isActive" INTEGER,"bookId" INTEGER,"sectionId" INTEGER,"hadith_number" INTEGER, PRIMARY KEY( "id"));');
 
-$Generation->SQLLiteQuery('CREATE TABLE "hadithsection" ("nameEnglish" VARCHAR,"nameBengali" VARCHAR,"lastUpdate" VARCHAR,"isActive" INTEGER,"id" INTEGER,"serial" INTEGER,"bookId" INTEGER, "hadith_number" INTEGER, PRIMARY KEY("id"));');
+$Generation->SQLLiteQuery('CREATE TABLE "hadithsection" ("nameEnglish" VARCHAR,"nameBengali" VARCHAR,"lastUpdate" VARCHAR,"isActive" INTEGER,"id" INTEGER,"serial" INTEGER,"bookId" INTEGER, "hadith_number" INTEGER, "range_start" INTEGER, "range_end" INTEGER, PRIMARY KEY("id"));');
 
 $Generation->SQLLiteQuery('CREATE TABLE "hadithexplanation" ("explanation" VARCHAR,"lastUpdate" VARCHAR,"id" INTEGER,"isActive" INTEGER,"hadithId" INTEGER, PRIMARY KEY("id"));');
 
@@ -92,7 +92,7 @@ $SqlQuery=$Generation->MySQLQuery("SELECT * FROM `hadithbook`");
 $Generation->SQLLiteQuery("BEGIN TRANSACTION");
 while ($row = mysql_fetch_array($SqlQuery)) {
 
-    $Q = $Generation->MySQLQuery("SELECT * FROM `hadithsection` WHERE BookID=".$row['BookID']);
+    $Q = $Generation->MySQLQuery("SELECT * FROM `hadithsection` WHERE BookID=".$row['BookID']." AND hadithsection.SecActive = 1");
     $SectionNumber=mysql_num_rows($Q);
     $Q = $Generation->MySQLQuery("SELECT SectionID FROM `hadithmain` WHERE BookID=".$row['BookID']);
     $HadithNumber=mysql_num_rows($Q);
@@ -122,14 +122,14 @@ echo 'Insertion to SQL Lite Table: hadithchapter completed.<br>';
 
 // Query Table Table `hadithsection` and Insert Accordingly to SQLLite.
 
-$SqlQuery=$Generation->MySQLQuery("SELECT * FROM `hadithsection`");
+$SqlQuery=$Generation->MySQLQuery("SELECT *, ( SELECT min(hadithmain.HadithNo) FROM hadithmain WHERE hadithmain.SectionID = hadithsection.SectionID AND hadithmain.BookID = `hadithsection`.`BookID` ) AS range_start, ( SELECT max(hadithmain.HadithNo) FROM hadithmain WHERE hadithmain.SectionID = hadithsection.SectionID AND hadithmain.BookID = `hadithsection`.`BookID` ) AS range_end FROM `hadithsection`");
 $Generation->SQLLiteQuery("BEGIN TRANSACTION");
 while ($row = mysql_fetch_array($SqlQuery)) {
 
     $Q = $Generation->MySQLQuery("SELECT SectionID FROM `hadithmain` WHERE SectionID=".$row['SectionID']);
     $HadithNumber=mysql_num_rows($Q);
-
-    $Generation->SQLLiteQuery("INSERT INTO hadithsection (id,bookId,nameBengali,nameEnglish,isActive,lastUpdate,hadith_number,serial) VALUES (".$row['SectionID'].",".$row['BookID'].",'".strip_tags(htmlentities($row['SectionBD'], ENT_QUOTES))."','".strip_tags(htmlentities($row['SectionEN'], ENT_QUOTES))."',".$row['SecActive'].",'".$row['lastUpdate']."','".$HadithNumber."','".$row['serial']."')");
+	
+    $Generation->SQLLiteQuery("INSERT INTO hadithsection (id,bookId,nameBengali,nameEnglish,isActive,lastUpdate,hadith_number,serial,range_start,range_end) VALUES (".$row['SectionID'].",".$row['BookID'].",'".strip_tags(htmlentities($row['SectionBD'], ENT_QUOTES))."','".strip_tags(htmlentities($row['SectionEN'], ENT_QUOTES))."',".$row['SecActive'].",'".$row['lastUpdate']."','".$HadithNumber."','".$row['serial']."','".$row['range_start']."','".$row['range_end']."')");
 }
 $Generation->SQLLiteQuery("END TRANSACTION");
 echo 'Insertion to SQL Lite Table: hadithsection completed.<br>';
